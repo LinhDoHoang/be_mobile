@@ -165,7 +165,36 @@ export class DebtsService {
 
   async update(id: number, dto: UpdateDebtDto): Promise<Debt> {
     try {
-      await this.debtRepo.update(id, dto);
+      const {
+        status,
+        dueDate,
+        debtorName,
+        transactionId,
+        ...updateTransactionDto
+      } = dto;
+
+      const updateDebtDto = {
+        ...(status && { status }),
+        ...(dueDate && { dueDate }),
+        ...(debtorName && { debtorName }),
+        ...(transactionId && { transactionId }),
+      };
+
+      if (Object.keys(updateTransactionDto).length > 0) {
+        if (!transactionId) {
+          throw new BadRequestException({
+            isControlled: true,
+            message: 'Transaction ID is required for transaction update',
+            data: null,
+          });
+        }
+        await this.transactionRepo.update(transactionId, updateTransactionDto);
+      }
+
+      if (Object.keys(updateDebtDto).length > 0) {
+        await this.debtRepo.update(id, updateDebtDto);
+      }
+
       const updatedDebt = await this.findOne(id);
       this.loggerService.debug(`Debt updated successfully`);
       return updatedDebt;
