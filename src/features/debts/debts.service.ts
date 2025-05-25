@@ -1,73 +1,196 @@
 import {
   Injectable,
-  Logger,
-  NotFoundException,
   InternalServerErrorException,
+  BadRequestException,
+  Logger,
+  HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Debt } from './entities/debt.entity';
-import { CreateDebtDto } from './dto/create-debt.dto';
 import { UpdateDebtDto } from './dto/update-debt.dto';
+import { CreateTransactionDto } from '../transactions/dto/create-transaction.dto';
+import { Transaction } from '../transactions/entities/transaction.entity';
+import { GetListDebtDto } from './dto/get-list-debt.dto';
+import { paginate } from 'nestjs-typeorm-paginate';
 
+const alias = 'debts';
+const transactionAlias = 'transactions';
 @Injectable()
 export class DebtsService {
-  private readonly logger = new Logger(DebtsService.name);
+  private readonly loggerService: Logger;
 
   constructor(
     @InjectRepository(Debt)
     private readonly debtRepo: Repository<Debt>,
-  ) {}
+    @InjectRepository(Transaction)
+    private readonly transactionRepo: Repository<Transaction>,
+    private readonly dataSource: DataSource,
+  ) {
+    this.loggerService = new Logger('DebtsService');
+  }
 
-  async create(dto: CreateDebtDto): Promise<Debt> {
+  async create(dto, createTransactionDto: CreateTransactionDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
-      const debt = this.debtRepo.create({ ...dto, user: { id: dto?.userId } });
-      return await this.debtRepo.save(debt);
+      const newTransaction = this.transactionRepo.create({
+        ...createTransactionDto,
+        user: { id: createTransactionDto.userId },
+      });
+      const saveTransaction = await queryRunner.manager.save(newTransaction);
+
+      const debt = this.debtRepo.create({
+        ...dto,
+        transaction: { id: saveTransaction.id },
+      });
+      const savedDebt = await queryRunner.manager.save(debt);
+
+      await queryRunner.commitTransaction();
+      this.loggerService.debug('Debt created successfully');
+      return savedDebt;
     } catch (error) {
-      this.logger.error('Debt creation failed', error.stack);
-      throw new InternalServerErrorException('Debt creation failed');
+      await queryRunner.rollbackTransaction();
+      this.loggerService.error('Debt creation failed', error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
+    } finally {
+      await queryRunner.release();
     }
   }
 
-  async findAll(): Promise<Debt[]> {
+  async findAll(query: GetListDebtDto) {
+    const {
+      page = 1,
+      limit = 10,
+      debtorName,
+      dueFrom,
+      dueTo,
+      status,
+      transactionId,
+      createFrom,
+      createTo,
+      id,
+    } = query;
+
     try {
-      return await this.debtRepo.find();
+      const queryBuilder = this.debtRepo.createQueryBuilder(alias);
+
+      queryBuilder.where('1=1');
+
+      if (debtorName) {
+        queryBuilder.andWhere(`${alias}.debtor_name = :debtorName`, {
+          debtorName,
+        });
+      }
+      if (createFrom) {
+        queryBuilder.andWhere(`${alias}.created_at >= :createFrom`, {
+          createFrom: new Date(Number(createFrom)),
+        });
+      }
+      if (createTo) {
+        queryBuilder.andWhere(`${alias}.created_at <= :createTo`, {
+          createTo: new Date(Number(createTo)),
+        });
+      }
+      if (dueFrom) {
+        queryBuilder.andWhere(`${alias}.due_date >= :dueFrom`, {
+          dueFrom: new Date(Number(dueFrom)),
+        });
+      }
+      if (dueTo) {
+        queryBuilder.andWhere(`${alias}.due_date <= :dueTo`, {
+          dueTo: new Date(Number(dueTo)),
+        });
+      }
+      if (id) {
+        queryBuilder.andWhere(`${alias}.id = :id`, {
+          id,
+        });
+      }
+      if (transactionId) {
+        queryBuilder.andWhere(`${alias}.transaction_id = :transactionId`, {
+          transactionId,
+        });
+      }
+      if (status) {
+        queryBuilder.andWhere(`${alias}.status = :status`, {
+          status,
+        });
+      }
+
+      queryBuilder.leftJoinAndSelect(`${alias}.transaction`, transactionAlias);
+
+      queryBuilder.orderBy(`${alias}.created_at`, 'DESC');
+
+      const result = await paginate<Debt>(queryBuilder, {
+        limit,
+        page,
+      });
+
+      this.loggerService.debug(`Debts fetched successfully`);
+
+      return result;
     } catch (error) {
-      this.logger.error('Fetching debts failed', error.stack);
-      throw new InternalServerErrorException('Fetching debts failed');
+      this.loggerService.error('Fetching debts failed', error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async findOne(id: string): Promise<Debt> {
+  async findOne(id: number): Promise<Debt> {
     try {
       const debt = await this.debtRepo.findOne({
         where: { id },
+        relations: ['transaction'], // Include user relation
       });
-      if (!debt) throw new NotFoundException('Debt not found');
+      this.loggerService.debug(`Debt fetched successfully`);
       return debt;
     } catch (error) {
-      this.logger.error(`Fetching debt failed: ID = ${id}`, error.stack);
-      throw error;
+      this.loggerService.error(`Fetching debt failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async update(id: string, dto: UpdateDebtDto): Promise<Debt> {
+  async update(id: number, dto: UpdateDebtDto): Promise<Debt> {
     try {
       await this.debtRepo.update(id, dto);
-      return await this.findOne(id);
+      const updatedDebt = await this.findOne(id);
+      this.loggerService.debug(`Debt updated successfully`);
+      return updatedDebt;
     } catch (error) {
-      this.logger.error(`Updating debt failed: ID = ${id}`, error.stack);
-      throw new InternalServerErrorException('Debt update failed');
+      this.loggerService.error(`Updating debt failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     try {
-      const result = await this.debtRepo.delete(id);
-      if (result.affected === 0) throw new NotFoundException('Debt not found');
+      await this.debtRepo.delete(id);
+      this.loggerService.debug(`Debt deleted successfully`);
+      return null;
     } catch (error) {
-      this.logger.error(`Deleting debt failed: ID = ${id}`, error.stack);
-      throw error;
+      this.loggerService.error(`Deleting debt failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 }

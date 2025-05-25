@@ -1,10 +1,17 @@
-import { IsEmail, IsEnum, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateUserDto {
   @ApiProperty({
     example: 'user@example.com',
-    description: 'Email của người dùng',
+    description: "User's email",
   })
   @IsEmail()
   email: string;
@@ -12,26 +19,26 @@ export class CreateUserDto {
   @ApiProperty({
     example: 'StrongPassword123',
     minLength: 6,
-    description: 'Mật khẩu (ít nhất 6 ký tự)',
+    description: 'Password must contain at least 6 characters',
   })
   @IsString()
   @Length(6, 255)
   password: string;
 
   @ApiProperty({
-    example: 'refresh-token-value',
-    required: false,
-    description: 'Refresh token nếu có',
+    example: 1000000,
+    description: 'Target money',
   })
+  @IsNumber()
+  @Type(() => Number)
+  target: number;
+
+  @IsOptional()
+  @IsString()
+  @Length(6, 255)
+  tempPassword?: string;
+
   @IsOptional()
   @IsString()
   refreshToken?: string;
-
-  @ApiProperty({
-    example: 'user',
-    enum: ['user', 'admin'],
-    description: 'Vai trò của người dùng',
-  })
-  @IsEnum(['user', 'admin'])
-  roles: 'user' | 'admin';
 }

@@ -4,73 +4,95 @@ import {
   IsString,
   IsUUID,
   IsDateString,
+  IsNotEmpty,
+  IsOptional,
 } from 'class-validator';
-import { DebtsStatus, DebtsType } from 'src/common/constant';
+import { DebtsStatus, TransactionsType } from 'src/common/constant';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateDebtDto {
   @ApiProperty({
-    example: 'd58b431b-f93b-4e17-9447-caeefde5f3d0',
-    description: 'ID người dùng',
+    example: 1,
+    description: "Transaction's ID",
   })
-  @IsUUID()
-  userId: string;
-
-  @ApiProperty({
-    example: 'Nợ tiền sách',
-    description: 'Tên khoản nợ',
-  })
-  @IsString()
-  name: string;
-
-  @ApiProperty({
-    example: 'borrow',
-    enum: DebtsType,
-    description: 'Loại khoản nợ (vay hoặc cho vay)',
-  })
-  @IsEnum(DebtsType)
-  type: DebtsType;
-
-  @ApiProperty({
-    example: 500000,
-    description: 'Số tiền nợ',
-  })
+  @IsOptional()
   @IsNumber()
-  amount: number;
+  @Type(() => Number)
+  transactionId: number;
 
   @ApiProperty({
-    example: 'Nguyễn Văn A',
-    description: 'Tên người nợ (hoặc người cho vay)',
+    example: 'Johan Chua',
+    description: "Debtor's name",
   })
   @IsString()
   debtorName: string;
 
   @ApiProperty({
-    example: 'Mượn tiền mua sách học',
-    description: 'Chi tiết khoản nợ',
-  })
-  @IsString()
-  detail: string;
-
-  @ApiProperty({
-    example: '2025-05-01T00:00:00.000Z',
-    description: 'Ngày phát sinh khoản nợ (ISO 8601)',
-  })
-  @IsDateString()
-  debtDate: Date;
-
-  @ApiProperty({
     example: '2025-06-01T00:00:00.000Z',
-    description: 'Ngày đến hạn trả (ISO 8601)',
+    description: 'Due date',
   })
   @IsDateString()
   dueDate: Date;
 
   @ApiProperty({
-    example: 'unpaid',
+    example: DebtsStatus.PENDING,
     enum: DebtsStatus,
-    description: 'Trạng thái khoản nợ',
+    description: 'Debt status',
   })
+  @IsNotEmpty()
   @IsEnum(DebtsStatus)
   status: DebtsStatus;
+
+  @ApiProperty({
+    example: 1,
+    description: "User's ID",
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  userId: number;
+
+  @ApiProperty({
+    example: 'April Salary',
+    description: 'Name of transaction',
+  })
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiProperty({
+    example: 'income',
+    enum: TransactionsType,
+    description: 'Loại giao dịch',
+  })
+  @IsNotEmpty()
+  @IsEnum(TransactionsType)
+  type: TransactionsType;
+
+  @ApiProperty({
+    example: 15000000,
+    description: 'Money',
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  amount: number;
+
+  @ApiProperty({
+    example: 'A hard working month',
+    description: 'Detail for transaction',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  detail?: string;
+
+  @ApiProperty({
+    example: '2025-05-20T08:00:00.000Z',
+    description: 'Time of transaction',
+  })
+  @IsNotEmpty()
+  @IsDateString()
+  date: Date;
 }

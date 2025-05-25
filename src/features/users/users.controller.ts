@@ -5,7 +5,8 @@ import {
   Body,
   Param,
   Delete,
-  Put,
+  Patch,
+  Logger,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,49 +18,72 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly service: UsersService) {}
+  private readonly loggerService: Logger;
+
+  constructor(private readonly service: UsersService) {
+    this.loggerService = new Logger('UsersController');
+  }
 
   @Post()
-  @ApiOperation({ summary: 'Tạo người dùng mới' })
+  @ApiOperation({ summary: 'Create user' })
   @ApiBody({ type: CreateUserDto })
-  @ApiResponse({ status: 201, description: 'Tạo người dùng thành công' })
-  create(@Body() dto: CreateUserDto) {
-    return this.service.create(dto);
+  @ApiResponse({ status: 201, description: 'Create user successfully' })
+  async create(@Body() dto: CreateUserDto) {
+    this.loggerService.debug('Start creating user');
+    const newUser = await this.service.create(dto);
+    this.loggerService.debug('Complete creating user');
+    return newUser;
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách người dùng' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  findAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: 'Get user' })
+  @ApiResponse({ status: 200, description: 'Get user successfully' })
+  async findAll() {
+    this.loggerService.debug('Start fetching all users');
+    const users = await this.service.findAll();
+    this.loggerService.debug('Complete fetching all users');
+    return users;
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Lấy chi tiết người dùng theo ID' })
-  @ApiParam({ name: 'id', example: 'uuid-ví-dụ-1234-5678' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiResponse({ status: 200, description: 'Get user successfully' })
+  async findOne(@Param('id', ValidationIDPipe) id: number) {
+    this.loggerService.debug(`Start getting user`);
+    const user = await this.service.findOne(id);
+    this.loggerService.debug(`Complete getting user`);
+    return user;
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Cập nhật người dùng' })
-  @ApiParam({ name: 'id', example: 'uuid-ví-dụ-1234-5678' })
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update user' })
+  @ApiParam({ name: 'id', example: 1 })
   @ApiBody({ type: UpdateUserDto })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.service.update(id, dto);
+  @ApiResponse({ status: 200, description: 'Update user successfully' })
+  async update(
+    @Param('id', ValidationIDPipe) id: number,
+    @Body() dto: UpdateUserDto,
+  ) {
+    this.loggerService.debug(`Start updating user`);
+    const updatedUser = await this.service.update(id, dto);
+    this.loggerService.debug(`Complete updating user`);
+    return updatedUser;
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Xóa người dùng' })
-  @ApiParam({ name: 'id', example: 'uuid-ví-dụ-1234-5678' })
-  @ApiResponse({ status: 200, description: 'Xóa thành công' })
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @ApiOperation({ summary: 'Delete user' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiResponse({ status: 200, description: 'Delete user successfully' })
+  async remove(@Param('id', ValidationIDPipe) id: number) {
+    this.loggerService.debug(`Start deleting user`);
+    await this.service.remove(id);
+    this.loggerService.debug(`Complete deleting user`);
+    return null;
   }
 }

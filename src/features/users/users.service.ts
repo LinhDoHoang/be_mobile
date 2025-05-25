@@ -1,73 +1,102 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   InternalServerErrorException,
+  BadRequestException,
+  Logger,
+  HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { plainToClass, plainToInstance } from 'class-transformer';
+import { UserResponseDto } from './dto/response-user.dto';
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
-
+  private readonly loggerService: Logger;
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-  ) {}
+  ) {
+    this.loggerService = new Logger('UsersService');
+  }
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserDto) {
     try {
       const user = this.userRepo.create(dto);
-      return await this.userRepo.save(user);
+      const savedUser = await this.userRepo.save(user);
+      this.loggerService.debug('User created successfully');
+      return plainToInstance(UserResponseDto, savedUser);
     } catch (error) {
-      this.logger.error('User creation failed', error.stack);
-      throw new InternalServerErrorException('User creation failed');
+      this.loggerService.error('User creation failed', error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll() {
     try {
-      return await this.userRepo.find();
+      const users = await this.userRepo.find();
+      this.loggerService.debug('All users fetched successfully');
+      return plainToInstance(UserResponseDto, users);
     } catch (error) {
-      this.logger.error('Fetching users failed', error.stack);
-      throw new InternalServerErrorException('Fetching users failed');
+      this.loggerService.error('Fetching users failed', error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: number) {
     try {
-      const user = await this.userRepo.findOne({
-        where: { id },
-      });
-      if (!user) throw new NotFoundException('User not found');
-      return user;
+      const user = await this.userRepo.findOne({ where: { id } });
+      this.loggerService.debug(`User fetched successfully`);
+      return plainToInstance(UserResponseDto, user);
     } catch (error) {
-      this.logger.error(`Fetching user failed: ID = ${id}`, error.stack);
-      throw error;
+      this.loggerService.error(`Fetching user failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
+  async update(id: number, dto: UpdateUserDto) {
     try {
       await this.userRepo.update(id, dto);
-      return await this.findOne(id);
+      const updatedUser = await this.findOne(id);
+      this.loggerService.debug(`User updated successfully`);
+      return plainToInstance(UserResponseDto, updatedUser);
     } catch (error) {
-      this.logger.error(`Updating user failed: ID = ${id}`, error.stack);
-      throw new InternalServerErrorException('User update failed');
+      this.loggerService.error(`Updating user failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     try {
-      const result = await this.userRepo.delete(id);
-      if (result.affected === 0) throw new NotFoundException('User not found');
+      await this.userRepo.delete(id);
+      this.loggerService.debug(`User deleted successfully`);
     } catch (error) {
-      this.logger.error(`Deleting user failed: ID = ${id}`, error.stack);
-      throw error;
+      this.loggerService.error(`Deleting user failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 }

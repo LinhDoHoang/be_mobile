@@ -1,47 +1,3 @@
-// import {
-//   Controller,
-//   Get,
-//   Post,
-//   Body,
-//   Param,
-//   Delete,
-//   Put,
-// } from '@nestjs/common';
-// import { TransactionsService } from './transactions.service';
-// import { CreateTransactionDto } from './dto/create-transaction.dto';
-// import { UpdateTransactionDto } from './dto/update-transaction.dto';
-// import { ApiTags } from '@nestjs/swagger';
-
-// @ApiTags('Transactions')
-// @Controller('transactions')
-// export class TransactionsController {
-//   constructor(private readonly service: TransactionsService) {}
-
-//   @Post()
-//   create(@Body() dto: CreateTransactionDto) {
-//     return this.service.create(dto);
-//   }
-
-//   @Get()
-//   findAll() {
-//     return this.service.findAll();
-//   }
-
-//   @Get(':id')
-//   findOne(@Param('id') id: string) {
-//     return this.service.findOne(id);
-//   }
-
-//   @Put(':id')
-//   update(@Param('id') id: string, @Body() dto: UpdateTransactionDto) {
-//     return this.service.update(id, dto);
-//   }
-
-//   @Delete(':id')
-//   remove(@Param('id') id: string) {
-//     return this.service.remove(id);
-//   }
-// }
 import {
   Controller,
   Get,
@@ -49,61 +5,79 @@ import {
   Body,
   Param,
   Delete,
-  Put,
+  Patch,
+  Logger,
+  Query,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import {
   ApiTags,
-  ApiBody,
-  ApiResponse,
   ApiOperation,
+  ApiResponse,
+  ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
+import { GetListTransactionDto } from './dto/get-list-transaction.dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
 export class TransactionsController {
-  constructor(private readonly service: TransactionsService) {}
+  private readonly loggerService: Logger;
+
+  constructor(private readonly service: TransactionsService) {
+    this.loggerService = new Logger('TransactionsController');
+  }
 
   @Post()
-  @ApiOperation({ summary: 'Tạo giao dịch mới' })
+  @ApiOperation({ summary: 'Create transaction' })
   @ApiBody({ type: CreateTransactionDto })
-  @ApiResponse({ status: 201, description: 'Giao dịch được tạo thành công' })
-  create(@Body() dto: CreateTransactionDto) {
-    return this.service.create(dto);
+  @ApiResponse({ status: 201, description: 'Create transaction successfully' })
+  async create(@Body() dto: CreateTransactionDto) {
+    this.loggerService.debug('Start creating transaction');
+    const newTransaction = await this.service.create(dto);
+    this.loggerService.debug('Complete creating transaction');
+    return newTransaction;
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách tất cả giao dịch' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  findAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: 'Get all transactions' })
+  @ApiResponse({
+    status: 200,
+    description: 'Get all transactions successfully',
+  })
+  async findAll(@Query() query: GetListTransactionDto) {
+    this.loggerService.debug('Start fetching all transactions');
+    const transactions = await this.service.findAll(query);
+    this.loggerService.debug('Complete fetching all transactions');
+    return transactions;
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Lấy chi tiết một giao dịch' })
-  @ApiParam({ name: 'id', example: 'a23b9cde-78f2-4d11-8bcd-5a9e3eab9a9c' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Cập nhật thông tin giao dịch' })
-  @ApiParam({ name: 'id', example: 'a23b9cde-78f2-4d11-8bcd-5a9e3eab9a9c' })
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update transaction' })
+  @ApiParam({ name: 'id', example: 1 })
   @ApiBody({ type: UpdateTransactionDto })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-  update(@Param('id') id: string, @Body() dto: UpdateTransactionDto) {
-    return this.service.update(id, dto);
+  @ApiResponse({ status: 200, description: 'Update transaction successfully' })
+  async update(
+    @Param('id', ValidationIDPipe) id: number,
+    @Body() dto: UpdateTransactionDto,
+  ) {
+    this.loggerService.debug(`Start updating transaction`);
+    const updatedTransaction = await this.service.update(id, dto);
+    this.loggerService.debug(`Complete updating transaction`);
+    return updatedTransaction;
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Xóa giao dịch' })
-  @ApiParam({ name: 'id', example: 'a23b9cde-78f2-4d11-8bcd-5a9e3eab9a9c' })
-  @ApiResponse({ status: 200, description: 'Xóa thành công' })
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @ApiOperation({ summary: 'Delete transaction' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiResponse({ status: 200, description: 'Delete transaction successfully' })
+  async remove(@Param('id', ValidationIDPipe) id: number) {
+    this.loggerService.debug(`Start deleting transaction`);
+    await this.service.remove(id);
+    this.loggerService.debug(`Complete deleting transaction`);
+    return null;
   }
 }

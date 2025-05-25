@@ -2,9 +2,10 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable, map, catchError, throwError } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 @Injectable()
 export class TransformResponseInterceptor<T>
@@ -12,44 +13,37 @@ export class TransformResponseInterceptor<T>
 {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-
     const method = request.method;
-    const url = request.originalUrl;
 
     return next.handle().pipe(
       map((data) => {
+        const requestClass = context.getClass().name;
+        const message = this.getSuccessMessage(
+          method,
+          requestClass.toLowerCase().slice(0, -11),
+        );
+
         return {
-          success: true,
-          message: this.getSuccessMessage(method, url),
+          message,
           data,
         };
-      }),
-      catchError((err) => {
-        const message =
-          err?.response?.message || err.message || 'Unknown error';
-        return throwError(() => ({
-          success: false,
-          message,
-          data: null,
-          statusCode: err.status || 500,
-        }));
       }),
     );
   }
 
-  private getSuccessMessage(method: string, url: string): string {
+  private getSuccessMessage(method: string, entity: string = ''): string {
     switch (method) {
       case 'GET':
-        return 'Lấy dữ liệu thành công';
+        return `Successfully retrieved ${entity} data`;
       case 'POST':
-        return 'Tạo mới thành công';
+        return `Successfully created new ${entity}`;
       case 'PUT':
       case 'PATCH':
-        return 'Cập nhật thành công';
+        return `Successfully updated ${entity}`;
       case 'DELETE':
-        return 'Xóa thành công';
+        return `Successfully deleted ${entity}`;
       default:
-        return 'Thao tác thành công';
+        return `Successfully performed operation`;
     }
   }
 }

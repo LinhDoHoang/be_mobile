@@ -4,13 +4,16 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { User } from 'src/features/users/entities/user.entity';
+import { TransactionsType } from 'src/common/constant';
+import { Debt } from 'src/features/debts/entities/debt.entity';
 
 @Entity({ name: 'transactions' })
 export class Transaction {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
   @ManyToOne(() => User, (user) => user.transactions, {
     nullable: false,
@@ -25,15 +28,15 @@ export class Transaction {
   @Column({
     name: 'type',
     type: 'enum',
-    enum: ['income', 'expense'],
+    enum: TransactionsType,
     nullable: false,
   })
-  type: 'income' | 'expense';
+  type: TransactionsType;
 
   @Column({
     name: 'amount',
     type: 'decimal',
-    precision: 15,
+    precision: 20,
     scale: 2,
     nullable: false,
   })
@@ -44,4 +47,13 @@ export class Transaction {
 
   @Column({ name: 'date', type: 'timestamp', nullable: false })
   date: Date;
+
+  @Column({ name: 'created_at', type: 'timestamp', default: new Date() })
+  createdAt: Date;
+
+  @OneToOne(() => Debt, (debt) => debt.transaction, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  debt: Debt;
 }

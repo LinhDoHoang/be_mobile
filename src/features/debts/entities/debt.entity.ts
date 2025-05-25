@@ -2,45 +2,42 @@ import {
   Column,
   Entity,
   PrimaryGeneratedColumn,
-  ManyToOne,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
-import { User } from 'src/features/users/entities/user.entity';
-import { DebtsStatus, DebtsType } from 'src/common/constant';
+import { DebtsStatus } from 'src/common/constant';
+import { Transaction } from 'src/features/transactions/entities/transaction.entity';
 
 @Entity({ name: 'debts' })
 export class Debt {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
-  @ManyToOne(() => User, (user) => user.debts, {
+  @OneToOne(() => Transaction, (transaction) => transaction.debt, {
     nullable: false,
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @Column({ name: 'name', type: 'varchar' })
-  name: string;
-
-  @Column({ name: 'type', type: 'enum', enum: DebtsType })
-  type: DebtsType;
-
-  @Column({ name: 'amount', type: 'numeric' })
-  amount: number;
+  @JoinColumn({ name: 'transaction_id' })
+  transaction: Transaction;
 
   @Column({ name: 'debtor_name', type: 'varchar' })
   debtorName: string;
 
-  @Column({ name: 'detail', type: 'text' })
-  detail: string;
-
-  @Column({ name: 'debt_date', type: 'timestamp' })
-  debtDate: Date;
-
   @Column({ name: 'due_date', type: 'timestamp' })
   dueDate: Date;
 
-  @Column({ name: 'status', type: 'enum', enum: DebtsStatus })
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: DebtsStatus,
+    default: DebtsStatus.PENDING,
+  })
   status: DebtsStatus;
+
+  @Column({
+    name: 'created_at',
+    type: 'timestamp',
+    default: new Date(),
+  })
+  createdAt: Date;
 }

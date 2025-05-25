@@ -5,7 +5,9 @@ import {
   Body,
   Param,
   Delete,
-  Put,
+  Patch,
+  Logger,
+  Query,
 } from '@nestjs/common';
 import { DebtsService } from './debts.service';
 import { CreateDebtDto } from './dto/create-debt.dto';
@@ -17,49 +19,76 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
+import { CreateTransactionDto } from '../transactions/dto/create-transaction.dto';
+import { plainToInstance } from 'class-transformer';
+import { DebtsStatus } from 'src/common/constant';
+import { GetListDebtDto } from './dto/get-list-debt.dto';
 
 @ApiTags('Debts')
 @Controller('debts')
 export class DebtsController {
-  constructor(private readonly service: DebtsService) {}
+  private readonly loggerService: Logger;
+
+  constructor(private readonly service: DebtsService) {
+    this.loggerService = new Logger('DebtsController');
+  }
 
   @Post()
-  @ApiOperation({ summary: 'Tạo khoản nợ mới' })
+  @ApiOperation({ summary: 'Create debt' })
   @ApiBody({ type: CreateDebtDto })
-  @ApiResponse({ status: 201, description: 'Tạo khoản nợ thành công' })
-  create(@Body() dto: CreateDebtDto) {
-    return this.service.create(dto);
+  @ApiResponse({ status: 201, description: 'Create debt successfully' })
+  async create(@Body() dto: CreateDebtDto) {
+    const {
+      status = DebtsStatus.PENDING,
+      dueDate,
+      debtorName,
+      transactionId,
+      ...createTransactionDto
+    } = dto;
+
+    this.loggerService.debug('Start creating debt');
+    const newDebt = await this.service.create(
+      { status, dueDate, debtorName, transactionId },
+      createTransactionDto,
+    );
+    this.loggerService.debug('Complete creating debt');
+    return newDebt;
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách tất cả khoản nợ' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  findAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: 'Get all debts' })
+  @ApiResponse({ status: 200, description: 'Get all debts successfully' })
+  async findAll(@Query() query: GetListDebtDto) {
+    this.loggerService.debug('Start fetching all debts');
+    const debts = await this.service.findAll(query);
+    this.loggerService.debug('Complete fetching all debts');
+    return debts;
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Lấy chi tiết khoản nợ theo ID' })
-  @ApiParam({ name: 'id', example: 'c60108b6-938f-456a-bbf3-998abc51aa91' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Cập nhật khoản nợ' })
-  @ApiParam({ name: 'id', example: 'c60108b6-938f-456a-bbf3-998abc51aa91' })
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update debt' })
+  @ApiParam({ name: 'id', example: 1 })
   @ApiBody({ type: UpdateDebtDto })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-  update(@Param('id') id: string, @Body() dto: UpdateDebtDto) {
-    return this.service.update(id, dto);
+  @ApiResponse({ status: 200, description: 'Update debt successfully' })
+  async update(
+    @Param('id', ValidationIDPipe) id: number,
+    @Body() dto: UpdateDebtDto,
+  ) {
+    this.loggerService.debug(`Start updating debt`);
+    const updatedDebt = await this.service.update(id, dto);
+    this.loggerService.debug(`Complete updating debt`);
+    return updatedDebt;
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Xóa khoản nợ' })
-  @ApiParam({ name: 'id', example: 'c60108b6-938f-456a-bbf3-998abc51aa91' })
-  @ApiResponse({ status: 200, description: 'Xóa thành công' })
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @ApiOperation({ summary: 'Delete debt' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiResponse({ status: 200, description: 'Delete debt successfully' })
+  async remove(@Param('id', ValidationIDPipe) id: number) {
+    this.loggerService.debug(`Start deleting debt`);
+    await this.service.remove(id);
+    this.loggerService.debug(`Complete deleting debt`);
+    return null;
   }
 }

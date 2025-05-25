@@ -1,14 +1,26 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Transaction } from 'src/features/transactions/entities/transaction.entity';
-import { Debt } from 'src/features/debts/entities/debt.entity';
+import { Notification } from 'src/features/notifications/entities/notification.entity';
 
 @Entity({ name: 'users' })
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
   @Column({ name: 'password', type: 'varchar', nullable: false })
   password: string;
+
+  @Column({ name: 'temp_password', type: 'varchar', nullable: true })
+  tempPassword: string;
+
+  @Column({
+    name: 'target',
+    type: 'decimal',
+    precision: 20,
+    scale: 2,
+    nullable: true,
+  })
+  target: number;
 
   @Column({
     name: 'email',
@@ -28,16 +40,15 @@ export class User {
   refreshToken: string;
 
   @Column({
-    name: 'roles',
-    type: 'enum',
-    enum: ['user', 'admin'],
-    nullable: false,
+    name: 'created_at',
+    type: 'timestamp',
+    default: new Date(),
   })
-  roles: 'user' | 'admin';
+  createdAt: Date;
 
   @OneToMany(() => Transaction, (transaction) => transaction.user)
   transactions: Transaction[];
 
-  @OneToMany(() => Debt, (debt) => debt.user)
-  debts: Debt[];
+  @OneToMany(() => Notification, (notification) => notification.user)
+  notifications: Notification[];
 }
