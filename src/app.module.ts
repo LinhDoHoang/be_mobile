@@ -10,14 +10,24 @@ import { TransformResponseInterceptor } from './common/interceptor/response.inte
 import { ValidationInputPipe } from './common/pipe/validation-input.pipe';
 import { GlobalExceptionFilter } from './common/filter/global-exception.filter';
 import { NotificationsModule } from './features/notifications/notifications.module';
+import { AuthModule } from './features/auth/auth.module';
+import { MailModule } from './features/mail/mail.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `.env`,
+    }),
     UsersModule,
     TransactionsModule,
     DebtsModule,
     DatabaseModule,
     NotificationsModule,
+    AuthModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [

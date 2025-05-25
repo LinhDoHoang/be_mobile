@@ -8,6 +8,7 @@ import {
   Patch,
   Logger,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -22,8 +23,11 @@ import {
 import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
 import { GetListNotificationDto } from './dto/get-list-notification.dto';
 import { Pagination } from 'nestjs-typeorm-paginate';
+import JwtAuthGuard from 'src/common/guard/jwt-auth.guard';
+import { User } from 'src/common/decorator/auth.decorator';
 
 @ApiTags('Notifications')
+@UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
   private readonly loggerService: Logger;
@@ -36,9 +40,12 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Create notification' })
   @ApiBody({ type: CreateNotificationDto })
   @ApiResponse({ status: 201, description: 'Create notification successfully' })
-  async create(@Body() dto: CreateNotificationDto) {
+  async create(@Body() dto: CreateNotificationDto, @User() user) {
     this.loggerService.debug('Start creating notification');
-    const newNotification = await this.service.create(dto);
+    const newNotification = await this.service.create({
+      ...dto,
+      userId: user.id,
+    });
     this.loggerService.debug('Complete creating notification');
     return newNotification;
   }

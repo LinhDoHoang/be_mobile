@@ -1,18 +1,19 @@
 import {
   Injectable,
-  NotFoundException,
   InternalServerErrorException,
   BadRequestException,
   Logger,
   HttpException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { plainToClass, plainToInstance } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/response-user.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +27,9 @@ export class UsersService {
 
   async create(dto: CreateUserDto) {
     try {
-      const user = this.userRepo.create(dto);
+      const hashPassword = await bcrypt.hash(dto.password, 10);
+      const user = this.userRepo.create({ ...dto, password: hashPassword });
+
       const savedUser = await this.userRepo.save(user);
       this.loggerService.debug('User created successfully');
       return plainToInstance(UserResponseDto, savedUser);
@@ -47,6 +50,25 @@ export class UsersService {
       return plainToInstance(UserResponseDto, users);
     } catch (error) {
       this.loggerService.error('Fetching users failed', error.stack);
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error);
+      } else {
+        throw new InternalServerErrorException(error);
+      }
+    }
+  }
+
+  async findByEmail(email: string) {
+    try {
+      const existingUser = await this.userRepo.findOne({
+        where: {
+          email,
+        },
+      });
+      this.loggerService.debug('Find by email successfully');
+      return existingUser;
+    } catch (error) {
+      this.loggerService.error(`Fetching user failed`, error.stack);
       if (error instanceof HttpException) {
         throw new BadRequestException(error);
       } else {
@@ -98,5 +120,36 @@ export class UsersService {
         throw new InternalServerErrorException(error);
       }
     }
+  }
+
+  async removeRefreshToken(email: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException({
+        isControlled: true,
+        message: 'User not found',
+        data: null,
+      });
+    }
+    user.refreshToken = '';
+    await this.userRepo.save(user);
+  }
+
+  async getUserIfRefreshTokenMatches(refreshToken: string, email: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.refreshToken) {
+      throw new BadRequestException('User do not have refresh token');
+    }
+
+    if (user.refreshToken == refreshToken) {
+      return user;
+    }
+
+    return null;
   }
 }

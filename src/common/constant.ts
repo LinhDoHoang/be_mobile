@@ -25,3 +25,10 @@ export enum TransactionsType {
   LEND = 'lend',
   OTHER = 'other',
 }
+
+export interface TokenPayload {
+  id: number;
+  email: string;
+  lastName: string;
+  firstName: string;
+}

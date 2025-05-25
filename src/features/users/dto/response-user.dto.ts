@@ -4,17 +4,26 @@ export class UserResponseDto {
   @Expose()
   id: number;
 
+  @Expose()
+  target: number;
+
+  @Expose()
+  firstName: string;
+
+  @Expose()
+  lastName: string;
+
+  @Expose()
+  email: string;
+
+  @Expose()
+  createdAt: Date;
+
   @Exclude()
   password: string;
 
   @Exclude()
   tempPassword: string;
-
-  @Expose()
-  target: number;
-
-  @Expose()
-  email: string;
 
   @Exclude()
   refreshToken: string;

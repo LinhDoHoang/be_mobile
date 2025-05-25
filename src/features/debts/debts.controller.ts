@@ -8,6 +8,7 @@ import {
   Patch,
   Logger,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { DebtsService } from './debts.service';
 import { CreateDebtDto } from './dto/create-debt.dto';
@@ -20,12 +21,13 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
-import { CreateTransactionDto } from '../transactions/dto/create-transaction.dto';
-import { plainToInstance } from 'class-transformer';
 import { DebtsStatus } from 'src/common/constant';
 import { GetListDebtDto } from './dto/get-list-debt.dto';
+import JwtAuthGuard from 'src/common/guard/jwt-auth.guard';
+import { User } from 'src/common/decorator/auth.decorator';
 
 @ApiTags('Debts')
+@UseGuards(JwtAuthGuard)
 @Controller('debts')
 export class DebtsController {
   private readonly loggerService: Logger;
@@ -38,7 +40,7 @@ export class DebtsController {
   @ApiOperation({ summary: 'Create debt' })
   @ApiBody({ type: CreateDebtDto })
   @ApiResponse({ status: 201, description: 'Create debt successfully' })
-  async create(@Body() dto: CreateDebtDto) {
+  async create(@Body() dto: CreateDebtDto, @User() user) {
     const {
       status = DebtsStatus.PENDING,
       dueDate,
@@ -50,7 +52,7 @@ export class DebtsController {
     this.loggerService.debug('Start creating debt');
     const newDebt = await this.service.create(
       { status, dueDate, debtorName, transactionId },
-      createTransactionDto,
+      { ...createTransactionDto, userId: user.id },
     );
     this.loggerService.debug('Complete creating debt');
     return newDebt;

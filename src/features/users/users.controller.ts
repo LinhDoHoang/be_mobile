@@ -7,6 +7,7 @@ import {
   Delete,
   Patch,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +20,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
+import JwtAuthGuard from 'src/common/guard/jwt-auth.guard';
 
 @ApiTags('Users')
 @Controller('users')

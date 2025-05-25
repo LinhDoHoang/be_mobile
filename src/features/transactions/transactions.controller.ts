@@ -8,6 +8,7 @@ import {
   Patch,
   Logger,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -21,8 +22,11 @@ import {
 } from '@nestjs/swagger';
 import { ValidationIDPipe } from 'src/common/pipe/validation-id.pipe';
 import { GetListTransactionDto } from './dto/get-list-transaction.dto';
+import JwtAuthGuard from 'src/common/guard/jwt-auth.guard';
+import { User } from 'src/common/decorator/auth.decorator';
 
 @ApiTags('Transactions')
+@UseGuards(JwtAuthGuard)
 @Controller('transactions')
 export class TransactionsController {
   private readonly loggerService: Logger;
@@ -35,9 +39,12 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Create transaction' })
   @ApiBody({ type: CreateTransactionDto })
   @ApiResponse({ status: 201, description: 'Create transaction successfully' })
-  async create(@Body() dto: CreateTransactionDto) {
+  async create(@Body() dto: CreateTransactionDto, @User() user) {
     this.loggerService.debug('Start creating transaction');
-    const newTransaction = await this.service.create(dto);
+    const newTransaction = await this.service.create({
+      ...dto,
+      userId: user.id,
+    });
     this.loggerService.debug('Complete creating transaction');
     return newTransaction;
   }

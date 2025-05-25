@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -13,8 +14,25 @@ export class CreateUserDto {
     example: 'user@example.com',
     description: "User's email",
   })
+  @IsNotEmpty()
   @IsEmail()
   email: string;
+
+  @ApiProperty({
+    example: 'Harry',
+    description: "User's first name",
+  })
+  @IsNotEmpty()
+  @IsString()
+  firstName: string;
+
+  @ApiProperty({
+    example: 'Maguire',
+    description: "User's last name",
+  })
+  @IsNotEmpty()
+  @IsString()
+  lastName: string;
 
   @ApiProperty({
     example: 'StrongPassword123',
@@ -29,6 +47,7 @@ export class CreateUserDto {
     example: 1000000,
     description: 'Target money',
   })
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   target: number;

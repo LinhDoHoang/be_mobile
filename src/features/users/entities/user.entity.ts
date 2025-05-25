@@ -10,6 +10,12 @@ export class User {
   @Column({ name: 'password', type: 'varchar', nullable: false })
   password: string;
 
+  @Column({ name: 'first_name', type: 'varchar', nullable: false })
+  firstName: string;
+
+  @Column({ name: 'last_name', type: 'varchar', nullable: false })
+  lastName: string;
+
   @Column({ name: 'temp_password', type: 'varchar', nullable: true })
   tempPassword: string;
 

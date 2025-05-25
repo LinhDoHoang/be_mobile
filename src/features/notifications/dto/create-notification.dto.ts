@@ -15,7 +15,7 @@ export class CreateNotificationDto {
     example: 1,
     description: 'User\s ID',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   userId: number;
