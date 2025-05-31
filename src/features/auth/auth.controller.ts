@@ -85,9 +85,9 @@ export class AuthController {
       refreshToken,
     });
 
-    const accessTokenCookie = `Authentication=${accessToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_ACCESS_TOKEN_EXPIRATION_TIME}`;
+    const accessTokenCookie = `Authentication=${accessToken}; HttpOnly; SameSite:none ; Path=/; Max-Age=${process.env.JWT_ACCESS_TOKEN_EXPIRATION_TIME}`;
 
-    const refreshTokenCookie = `Refresh=${refreshToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME}`;
+    const refreshTokenCookie = `Refresh=${refreshToken}; HttpOnly; SameSite:none ;Path=/; Max-Age=${process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME}`;
 
     res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]);
 
