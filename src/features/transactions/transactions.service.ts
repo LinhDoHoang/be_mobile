@@ -6,7 +6,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -14,6 +14,7 @@ import { GetListTransactionDto } from './dto/get-list-transaction.dto';
 import { paginate } from 'nestjs-typeorm-paginate';
 import { plainToInstance } from 'class-transformer';
 import { TransactionResponseDto } from './dto/response-transaction.dto';
+import { TransactionsType } from 'src/common/constant';
 
 const alias = 'transactions';
 @Injectable()
@@ -134,6 +135,33 @@ export class TransactionsService {
       return transaction;
     } catch (error) {
       this.loggerService.error(`Fetching transaction failed`, error.stack);
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException(error);
+      }
+    }
+  }
+
+  async findAllExpenses(userId: number) {
+    try {
+      const transactions = await this.transactionRepo.find({
+        where: {
+          user: { id: userId },
+          type: Not(
+            In([
+              TransactionsType.INCOME,
+              TransactionsType.LEND,
+              TransactionsType.BORROW,
+            ]),
+          ),
+        },
+        order: { createdAt: 'DESC' },
+      });
+      this.loggerService.debug(`Expenses fetched successfully`);
+      return transactions;
+    } catch (error) {
+      this.loggerService.error(`Fetching expenses failed`, error.stack);
       if (error instanceof HttpException) {
         throw error;
       } else {

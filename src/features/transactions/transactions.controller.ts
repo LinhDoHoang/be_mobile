@@ -62,6 +62,19 @@ export class TransactionsController {
     return transactions;
   }
 
+  @Get('expenses')
+  @ApiOperation({ summary: 'Get all expenses transactions' })
+  @ApiResponse({
+    status: 200,
+    description: 'Get all expenses transactions successfully',
+  })
+  async findAllExpenses(@User() user) {
+    this.loggerService.debug('Start fetching all expenses transactions');
+    const transactions = await this.service.findAllExpenses(user.id);
+    this.loggerService.debug('Complete fetching all expenses transactions');
+    return transactions;
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update transaction' })
   @ApiParam({ name: 'id', example: 1 })
