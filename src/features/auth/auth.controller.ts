@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -67,7 +68,7 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   @ApiResponse({ status: 201, description: 'oke' })
   @Post('log-in')
-  async logIn(@Res() res, @Body() dto: LoginDto) {
+  async logIn(@Res() res, @Body() dto: LoginDto, @Req() req) {
     const user = await this.authService.login(dto);
 
     if (!user) {
@@ -85,11 +86,27 @@ export class AuthController {
       refreshToken,
     });
 
-    const accessTokenCookie = `Authentication=${accessToken}; HttpOnly; SameSite:none ; Path=/; Max-Age=${process.env.JWT_ACCESS_TOKEN_EXPIRATION_TIME}`;
+    req.res.cookie('Authentication', accessToken, {
+      maxAge: process.env.JWT_ACCESS_TOKEN_EXPIRATION_TIME,
+      sameSite: 'none',
+      secure: true,
+      httpOnly: true,
+      path: '/',
+    });
 
-    const refreshTokenCookie = `Refresh=${refreshToken}; HttpOnly; SameSite:none ;Path=/; Max-Age=${process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME}`;
+    req.res.cookie('Refresh', refreshToken, {
+      maxAge: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
+      sameSite: 'none',
+      secure: true,
+      httpOnly: true,
+      path: '/',
+    });
 
-    res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]);
+    // const accessTokenCookie = `Authentication=${accessToken}; HttpOnly; SameSite:none ; Path=/; Max-Age=${process.env.JWT_ACCESS_TOKEN_EXPIRATION_TIME}`;
+
+    // const refreshTokenCookie = `Refresh=${refreshToken}; HttpOnly; SameSite:none ;Path=/; Max-Age=${process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME}`;
+
+    // res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]);
 
     return res.status(200).json({
       message: 'Login success',
@@ -101,10 +118,17 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'oke' })
   @UseGuards(JwtAuthGuard)
   @Get('log-out')
-  async logOut(@User() user, @Res() response) {
+  async logOut(@User() user, @Res() response, @Req() req) {
     await this.userService.removeRefreshToken(user.email);
+    const cookieOptions = {
+      path: '/',
+      sameSite: 'none' as const,
+      secure: true,
+      httpOnly: true,
+    };
 
-    response.setHeader('Set-Cookie', this.authService.getCookiesForLogOut());
+    req.res.clearCookie('Authentication', cookieOptions);
+    req.res.clearCookie('Refresh', cookieOptions);
 
     const res = {
       message: 'Log out successfully',

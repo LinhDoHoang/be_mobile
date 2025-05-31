@@ -68,9 +68,9 @@ export class TransactionsController {
     status: 200,
     description: 'Get all expenses transactions successfully',
   })
-  async findAllExpenses(@User() user) {
+  async findAllExpenses(@Query() query: GetListTransactionDto) {
     this.loggerService.debug('Start fetching all expenses transactions');
-    const transactions = await this.service.findAllExpenses(user.id);
+    const transactions = await this.service.findAllExpenses(query);
     this.loggerService.debug('Complete fetching all expenses transactions');
     return transactions;
   }

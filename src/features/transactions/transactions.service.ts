@@ -143,23 +143,79 @@ export class TransactionsService {
     }
   }
 
-  async findAllExpenses(userId: number) {
+  async findAllExpenses(query: GetListTransactionDto) {
+    const {
+      page = 1,
+      limit = 10,
+      amount,
+      detail,
+      name,
+      type,
+      createFrom,
+      createTo,
+      id,
+      userId,
+    } = query;
     try {
-      const transactions = await this.transactionRepo.find({
-        where: {
-          user: { id: userId },
-          type: Not(
-            In([
-              TransactionsType.INCOME,
-              TransactionsType.LEND,
-              TransactionsType.BORROW,
-            ]),
-          ),
-        },
-        order: { createdAt: 'DESC' },
+      const queryBuilder = this.transactionRepo.createQueryBuilder(alias);
+
+      queryBuilder.where('1=1');
+      queryBuilder.andWhere(`${alias}.type NOT IN (:...types)`, {
+        types: [
+          TransactionsType.INCOME,
+          TransactionsType.BORROW,
+          TransactionsType.LEND,
+        ],
       });
+
+      if (amount) {
+        queryBuilder.andWhere(`${alias}.amount = :amount`, { amount });
+      }
+      if (createFrom) {
+        queryBuilder.andWhere(`${alias}.date >= :createFrom`, {
+          createFrom: new Date(Number(createFrom)),
+        });
+      }
+      if (createTo) {
+        queryBuilder.andWhere(`${alias}.date <= :createTo`, {
+          createTo: new Date(Number(createTo)),
+        });
+      }
+      if (id) {
+        queryBuilder.andWhere(`${alias}.id = :id`, {
+          id,
+        });
+      }
+      if (userId) {
+        queryBuilder.andWhere(`${alias}.user_id = :userId`, {
+          userId,
+        });
+      }
+      if (detail) {
+        queryBuilder.andWhere(`${alias}.detail = :detail`, {
+          detail,
+        });
+      }
+      if (name) {
+        queryBuilder.andWhere(`${alias}.name = :name`, {
+          name,
+        });
+      }
+      if (type) {
+        queryBuilder.andWhere(`${alias}.type = :type`, {
+          type,
+        });
+      }
+
+      queryBuilder.orderBy(`${alias}.created_at`, 'DESC');
+
+      const result = await paginate<Transaction>(queryBuilder, {
+        limit,
+        page,
+      });
+
       this.loggerService.debug(`Expenses fetched successfully`);
-      return transactions;
+      return result;
     } catch (error) {
       this.loggerService.error(`Fetching expenses failed`, error.stack);
       if (error instanceof HttpException) {
