@@ -63,7 +63,7 @@ export class DebtsService {
     }
   }
 
-  async findAll(query: GetListDebtDto) {
+  async findAll(query: GetListDebtDto, userId: number) {
     const {
       page = 1,
       limit = 10,
@@ -78,10 +78,10 @@ export class DebtsService {
     } = query;
 
     try {
-      const queryBuilder = this.debtRepo.createQueryBuilder(alias);
-
-      queryBuilder.where('1=1');
-
+      const queryBuilder = this.debtRepo
+        .createQueryBuilder(alias)
+        .innerJoinAndSelect(`${alias}.transaction`, transactionAlias)
+        .andWhere(`${transactionAlias}.user_id = :userId`, { userId });
       if (debtorName) {
         queryBuilder.andWhere(`${alias}.debtor_name = :debtorName`, {
           debtorName,
@@ -122,8 +122,6 @@ export class DebtsService {
           status,
         });
       }
-
-      queryBuilder.leftJoinAndSelect(`${alias}.transaction`, transactionAlias);
 
       queryBuilder.orderBy(`${alias}.created_at`, 'DESC');
 

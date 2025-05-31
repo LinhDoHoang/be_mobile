@@ -47,7 +47,7 @@ export class TransactionsService {
     }
   }
 
-  async findAll(query: GetListTransactionDto) {
+  async findAll(query: GetListTransactionDto, userId: number) {
     const {
       page = 1,
       limit = 10,
@@ -58,13 +58,15 @@ export class TransactionsService {
       createFrom,
       createTo,
       id,
-      userId,
     } = query;
 
     try {
       const queryBuilder = this.transactionRepo.createQueryBuilder(alias);
 
       queryBuilder.where('1=1');
+      queryBuilder.andWhere(`${alias}.user_id = :userId`, {
+        userId,
+      });
 
       if (amount) {
         queryBuilder.andWhere(`${alias}.amount = :amount`, { amount });
@@ -143,7 +145,7 @@ export class TransactionsService {
     }
   }
 
-  async findAllExpenses(query: GetListTransactionDto) {
+  async findAllExpenses(query: GetListTransactionDto, userId: number) {
     const {
       page = 1,
       limit = 10,
@@ -154,12 +156,14 @@ export class TransactionsService {
       createFrom,
       createTo,
       id,
-      userId,
     } = query;
     try {
       const queryBuilder = this.transactionRepo.createQueryBuilder(alias);
 
       queryBuilder.where('1=1');
+      queryBuilder.andWhere(`${alias}.user_id = :userId`, {
+        userId,
+      });
       queryBuilder.andWhere(`${alias}.type NOT IN (:...types)`, {
         types: [
           TransactionsType.INCOME,
@@ -184,11 +188,6 @@ export class TransactionsService {
       if (id) {
         queryBuilder.andWhere(`${alias}.id = :id`, {
           id,
-        });
-      }
-      if (userId) {
-        queryBuilder.andWhere(`${alias}.user_id = :userId`, {
-          userId,
         });
       }
       if (detail) {

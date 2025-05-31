@@ -16,14 +16,6 @@ export class GetListNotificationDto extends PaginationInputDto {
     required: false,
   })
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  userId?: number;
-
-  @ApiProperty({
-    required: false,
-  })
-  @IsOptional()
   @IsString()
   content?: string;
 

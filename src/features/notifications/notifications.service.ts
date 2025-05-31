@@ -47,21 +47,16 @@ export class NotificationsService {
     }
   }
 
-  async findAll(query: GetListNotificationDto) {
-    const {
-      page = 1,
-      limit = 10,
-      content,
-      createFrom,
-      createTo,
-      id,
-      userId,
-    } = query;
+  async findAll(query: GetListNotificationDto, userId: number) {
+    const { page = 1, limit = 10, content, createFrom, createTo, id } = query;
 
     try {
       const queryBuilder = this.notificationRepo.createQueryBuilder(alias);
 
       queryBuilder.where('1=1');
+      queryBuilder.andWhere(`${alias}.user_id = :userId`, {
+        userId,
+      });
 
       if (content) {
         queryBuilder.andWhere(`${alias}.content = :content`, { content });

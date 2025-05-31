@@ -56,9 +56,9 @@ export class NotificationsController {
     status: 200,
     description: 'Get all notifications successfully',
   })
-  async findAll(@Query() query: GetListNotificationDto) {
+  async findAll(@Query() query: GetListNotificationDto, @User() user) {
     this.loggerService.debug('Start fetching all notifications');
-    const notifications = await this.service.findAll(query);
+    const notifications = await this.service.findAll(query, user.id);
     this.loggerService.debug('Complete fetching all notifications');
     return notifications;
   }

@@ -61,9 +61,9 @@ export class DebtsController {
   @Get()
   @ApiOperation({ summary: 'Get all debts' })
   @ApiResponse({ status: 200, description: 'Get all debts successfully' })
-  async findAll(@Query() query: GetListDebtDto) {
+  async findAll(@Query() query: GetListDebtDto, @User() user) {
     this.loggerService.debug('Start fetching all debts');
-    const debts = await this.service.findAll(query);
+    const debts = await this.service.findAll(query, user.id);
     this.loggerService.debug('Complete fetching all debts');
     return debts;
   }

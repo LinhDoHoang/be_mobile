@@ -55,9 +55,9 @@ export class TransactionsController {
     status: 200,
     description: 'Get all transactions successfully',
   })
-  async findAll(@Query() query: GetListTransactionDto) {
+  async findAll(@Query() query: GetListTransactionDto, @User() user) {
     this.loggerService.debug('Start fetching all transactions');
-    const transactions = await this.service.findAll(query);
+    const transactions = await this.service.findAll(query, user.id);
     this.loggerService.debug('Complete fetching all transactions');
     return transactions;
   }
@@ -68,9 +68,9 @@ export class TransactionsController {
     status: 200,
     description: 'Get all expenses transactions successfully',
   })
-  async findAllExpenses(@Query() query: GetListTransactionDto) {
+  async findAllExpenses(@User() user, @Query() query: GetListTransactionDto) {
     this.loggerService.debug('Start fetching all expenses transactions');
-    const transactions = await this.service.findAllExpenses(query);
+    const transactions = await this.service.findAllExpenses(query, user.id);
     this.loggerService.debug('Complete fetching all expenses transactions');
     return transactions;
   }
