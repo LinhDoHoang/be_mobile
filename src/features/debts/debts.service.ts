@@ -13,6 +13,7 @@ import { CreateTransactionDto } from '../transactions/dto/create-transaction.dto
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { GetListDebtDto } from './dto/get-list-debt.dto';
 import { paginate } from 'nestjs-typeorm-paginate';
+import { UpdateTransactionDto } from '../transactions/dto/update-transaction.dto';
 
 const alias = 'debts';
 const transactionAlias = 'transactions';
@@ -164,35 +165,44 @@ export class DebtsService {
   async update(id: number, dto: UpdateDebtDto): Promise<Debt> {
     try {
       const {
+        userId,
+        name,
+        type,
+        amount,
+        detail,
+        date,
         status,
         dueDate,
         debtorName,
         transactionId,
-        ...updateTransactionDto
       } = dto;
 
-      const updateDebtDto = {
-        ...(status && { status }),
-        ...(dueDate && { dueDate }),
-        ...(debtorName && { debtorName }),
-        ...(transactionId && { transactionId }),
+      const updateTransactionDto: UpdateTransactionDto = {
+        ...(userId && { userId }),
+        ...(name && { name }),
+        ...(type && { type }),
+        ...(amount && { amount }),
+        ...(detail && { detail }),
+        ...(date && { date: new Date(date) }),
       };
 
+      const updateDebtDto = {
+        ...(status && { status}),
+        ...(dueDate && { dueDate: new Date(dueDate)}),
+        ...(debtorName && { debtorName }),
+      }
+
       if (Object.keys(updateTransactionDto).length > 0) {
-        if (!transactionId) {
-          throw new BadRequestException({
-            isControlled: true,
-            message: 'Transaction ID is required for transaction update',
-            data: null,
-          });
-        }
-        await this.transactionRepo.update(transactionId, updateTransactionDto);
+        const transaction = this.transactionRepo.findOne({ where: { debt: { id }}})
+
+        if (!transaction) throw new BadRequestException({
+          message: 'No transaction exist',
+          data: null
+        })
+        await this.transactionRepo.update((await transaction).id, updateTransactionDto);
       }
 
-      if (Object.keys(updateDebtDto).length > 0) {
-        await this.debtRepo.update(id, updateDebtDto);
-      }
-
+      if (Object.keys(updateDebtDto).length > 0) await this.debtRepo.update(id, updateDebtDto)
       const updatedDebt = await this.findOne(id);
       this.loggerService.debug(`Debt updated successfully`);
       return updatedDebt;
