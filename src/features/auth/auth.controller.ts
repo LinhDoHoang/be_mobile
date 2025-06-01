@@ -24,6 +24,7 @@ import JwtAuthGuard from 'src/common/guard/jwt-auth.guard';
 import JwtRefreshGuard from 'src/common/guard/jwt-refresh.guard';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from '../users/dto/response-user.dto';
+import { RegisterUserDto } from './dto/register.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -40,7 +41,7 @@ export class AuthController {
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'Create user successfully' })
   @Post('register')
-  async register(@Body() dto: CreateUserDto) {
+  async register(@Body() dto: RegisterUserDto) {
     this.loggerService.debug('Start register');
     const result = await this.authService.register(dto);
     this.loggerService.debug('Complete register');
