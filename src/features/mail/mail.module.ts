@@ -22,7 +22,7 @@ import { MailService } from './mail.service';
           },
         },
         defaults: {
-          from: '"Smart Financial Tracking Application"',
+          from: '"Treazure"',
         },
         template: {
           dir: join(__dirname, 'template'),

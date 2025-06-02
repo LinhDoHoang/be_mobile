@@ -10,7 +10,7 @@ export class MailService {
   async sendWelcoming(welcomeDto: WelcomeDto) {
     await this.mailerService.sendMail({
       to: welcomeDto.email.trim(),
-      subject: 'Welcome newbie',
+      subject: 'Welcome Newbie',
       template: 'welcome',
       context: {
         email: welcomeDto.email.trim(),
