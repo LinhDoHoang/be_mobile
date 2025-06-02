@@ -7,6 +7,7 @@ export class ConfirmPassword implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const { email, currentPassword } = request?.body;
+    console.log(email, currentPassword);
     await this.authService.verifyPassword(currentPassword, email);
 
     return true;
