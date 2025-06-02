@@ -14,6 +14,7 @@ import { ChangePasswordDto } from './dto/change.dto';
 import { LoginDto } from './dto/log-in.dto';
 import { TokenPayload } from 'src/common/constant';
 import { JwtService } from '@nestjs/jwt';
+import { RegisterUserDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,8 +27,15 @@ export class AuthService {
     this.loggerService = new Logger('AuthService');
   }
 
-  async register(dto: CreateUserDto) {
+  async register(dto: RegisterUserDto) {
     try {
+      if (dto.password !== dto.confirmPassword) {
+         throw new BadRequestException({
+          isControlled: true,
+          message: 'Passwords do not match',
+          data: null,
+        });       
+      }
       const existingUser = await this.userService.findByEmail(dto.email);
       if (existingUser)
         throw new BadRequestException({
@@ -35,7 +43,15 @@ export class AuthService {
           message: 'User existed, use different email',
           data: null,
         });
-      const newUser = await this.userService.create(dto);
+
+      const newUserDto: CreateUserDto = {
+        email: dto.email,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        password: dto.password 
+      }
+
+      const newUser = await this.userService.create(newUserDto);
       this.mailService.sendWelcoming({
         email: dto.email,
         fullName: `${dto.firstName} ${dto.lastName}`,

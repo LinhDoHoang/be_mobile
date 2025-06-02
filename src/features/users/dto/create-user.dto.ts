@@ -50,7 +50,7 @@ export class CreateUserDto {
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
-  target: number;
+  target?: number;
 
   @IsOptional()
   @IsString()
